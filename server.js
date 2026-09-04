@@ -1,8 +1,9 @@
 const express = require('express');
-const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { makeWASocket, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const cors = require('cors');
 const qrcode = require('qrcode-terminal');
+const { usePostgresAuthState } = require('./pgAuth');
 
 const app = express();
 app.use(express.json());
@@ -12,7 +13,12 @@ let sock;
 let isConnected = false;
 
 async function connectToWhatsApp() {
-    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+    if (!process.env.DATABASE_URL) {
+        console.error('DATABASE_URL is not set. Cannot connect to Postgres.');
+        return;
+    }
+
+    const { state, saveCreds } = await usePostgresAuthState();
 
     sock = makeWASocket({
         auth: state,
